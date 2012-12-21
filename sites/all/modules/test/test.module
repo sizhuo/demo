@@ -1,0 +1,122 @@
+<?php
+
+function test_menu() {
+		$items = array();
+		$items['admin/test'] = array(
+				'title' => 'upload Test',
+				'page callback' => 'drupal_get_form',
+				'page arguments' => array('test_upload_form'),
+				'access callback' => TRUE,
+				'type' => MENU_NORMAL_ITEM,
+		);
+		$items['admin/test/choose'] = array(
+				'title' => 'select test',
+				'page callback' => 'drupal_get_form',
+				'page arguments' => array('test_choose_form'),
+				'access callback' => TRUE,
+				'type' => MENU_NORMAL_ITEM,
+		);
+
+		return $items;
+}
+
+function getLogoPaths(){
+		$logos = '';
+
+$strLogosPath = 'public://homepage_images/';
+	$arrNoMask = array('.', '..', 'CVS', 'svn');
+	$arrFiles = file_scan_directory($strLogosPath, '/\\.(jpg|gif|png|jpeg?)$/', $arrNoMask);
+ 
+	foreach ($arrFiles as $key => $value)
+	{
+		//print_r($values->filename);
+		//exit();
+		$logos[$value->filename] = $value->filename;
+	}
+ 
+	return $logos;
+		
+
+}
+
+function test_upload_form($form, &$form_state) {
+	   $form['#attributes']['enctype'] = 'multipart/form-data'; // If this is not here, upload will fail on submit
+	   $form['fid'] = array( '#title'        => t('Upload homepage image'),
+	                         '#type'         => 'file',
+	                         '#description'  => t('Images must be one of jpg, bmp, gif or png formats and 800 x 391 pixels.'),
+	                       );
+ 
+	   $form['submit'] = array(
+	    '#type' => 'submit',
+	    '#value' => t('Save'),
+	);		
+	return $form;
+		
+}
+
+
+function test_upload_form_submit($form , &$form_state){
+$filepath = 'public://homepage_images/';
+	//$filepath = 'temporary://test/';
+	//$filename = 'rcc_date.mp3';
+ 
+	file_prepare_directory($filepath, FILE_CREATE_DIRECTORY);
+	$file = file_save_upload('fid', array('file_validate_extensions' => array('png gif jpg jpeg')), $filepath);
+ 
+        // Very important to do this or file will be deleted on cron
+        $file->status = FILE_STATUS_PERMANENT;
+        $file = file_save($file);
+ 
+	if($file){
+		drupal_set_message('File Uploaded');
+	}elseif(!$file){
+		drupal_set_message('There was an error uploading the file', $type = 'error');
+	}
+		
+}
+
+function test_choose_form($form, &$form_state){
+$values = variable_get('homepage-main-image', array());
+        // Gets the array of images to use as the form options setting the value of the selection to the image for a visual guide
+	$logos = getLogoPaths();
+        $i = 0;
+	$arrImages = '';
+        foreach ($logos as $key => $value) {
+            $ImagesPath = 'sites/default/files/homepage_images';
+            $arrImages[$key] = '<img src="'.base_path().''.$ImagesPath.'/'.$value.'" height="391px" />'; 
+            $i++;
+        }
+ 
+	$form['homepage_main_image']
+               = array('#title'            => 'Homepage Image Select',
+                       '#type'             => 'radios',
+                       '#default_value'    => $values['image'],
+                       '#options'          => $arrImages);
+ 
+		$form['submit'] = array(
+		    '#type' => 'submit',
+		    '#value' => t('Save'),
+		);
+ 
+	return $form;
+		
+}
+
+function test_choose_form_submit($form, &$form_state) {
+$homepageImage['image'] = $formstate['values']['homepage_main_image'];
+	$arrHomepage = $homepageImage;
+ 
+	variable_set('homepage-main-image', $arrHomepage);
+	drupal_set_message('Image Saved');
+		
+}
+
+ if (isset($_FILES ['files']) && is_uploaded_file($_FILES ['files'] ['tmp_name'] [$field_name])) {
+    $file = file_save_upload($field_name);
+    if (!$file) {
+      form_set_error($field_name, 'Error uploading file.');
+      return;
+    }
+    $form_value ['values'] ['file'] = $file;
+  }
+

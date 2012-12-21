@@ -1,0 +1,58 @@
+<?php
+function my_taxonomy_term_menu_alter(&$menu){
+		if(isset($menu['taxonomy/term/%taxonomy_term'])){
+//				$menu['taxonomy/term/%taxonomy_term'] = array(
+//						['page callback'] => 'my_taxonomy_term_term_page',
+////						['title callback'] = 'my_taxonomy_term_term_title',
+//						['access callback'] => TRUE,
+//						//['access arguments'] = array(2),
+//				);
+				$menu['taxonomy/term/%taxonomy_term']['page callback'] = 'my_taxonomy_term_term_page';
+		}
+		}
+
+function my_taxonomy_term_term_page($term){
+ $current = (object) array(
+    'tid' => $term->tid,
+  );
+$breadcrumb = array();
+
+while ($parents = taxonomy_get_parents($current->tid)) {
+  $current = array_shift($parents);
+  $breadcrumb[] = l($current->name, 'taxonomy/term/' . $current->tid);
+}
+$breadcrumb[] = l(t('Home'), NULL);
+$breadcrumb = array_reverse($breadcrumb);
+drupal_set_breadcrumb($breadcrumb);
+drupal_add_feed('taxonomy/term/' . $term->tid . '/feed', 'RSS - ' . $term->name);
+
+  $build = array();
+
+  $build['term_heading'] = array(
+    'term' => taxonomy_term_view($term, 'full'),
+  );
+
+  if ($nids = taxonomy_select_nodes($term->tid, TRUE, variable_get('default_nodes_main', 10))) {
+    $nodes = node_load_multiple($nids);
+    $build += node_view_multiple($nodes,$view_mode = 'full');
+    $build['pager'] = array(
+      '#theme' => 'pager', 
+      '#weight' => 1,
+    );
+  }
+  else {
+    $build['no_content'] = array(
+      '#prefix' => '<p>', 
+      '#markup' => t('fuck .'), 
+      '#suffix' => '</p>',
+    );
+  }
+  var_dump($build['nodes'][2]);
+  return $build;
+		
+
+}
+
+//function my_taxonomy_term_term_title($term) {
+//
+//}

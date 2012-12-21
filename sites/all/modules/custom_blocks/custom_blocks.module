@@ -1,0 +1,627 @@
+<?php
+/**********************************************************\
+ 							帮助
+************************************************************
+
+Implements hook_help()
+
+
+
+@file
+
+
+@API
+
+
+@api
+
+
+@param $path
+???
+@param $arg
+???
+
+@return string
+\**********************************************************/
+function custom_blocks_help($path, $arg) {
+		switch($path) {
+		case "admin/help#custom_blocks" :
+				return '<p>'. t("定制网站所增加的自定义模块"). '</p>';
+				break;
+		}
+}
+
+/*********************************************************\
+							区块
+************************************************************
+
+Implements hook_block_info()
+
+
+
+@file
+
+
+@API
+
+
+@api
+
+
+@param 
+
+@return array $blocks
+
+\*********************************************************/
+function custom_blocks_block_info() {
+		//配置型blocks
+		$blocks['big_top'] = array(
+				'info' => t('大广告'),
+				'cache' => DRUPAL_CACHE_PER_ROLE,
+		);
+
+		$blocks['telephone'] = array(
+				'info' => t('联系电话'),
+				'cache' => DRUPAL_CACHE_PER_ROLE,
+		);
+
+		$blocks['scroll_bar'] = array(
+				'info' => t('跑马灯'),
+				'cache' => DRUPAL_CACHE_PER_ROLE,
+		);
+
+		$blocks['friend_links'] = array(
+				'info' => t('友情链接'),
+				'cache' => DRUPAL_CACHE_PER_ROLE,
+		);
+
+		$blocks['custom_footer'] = array(
+				'info' => t('尾部'),
+				'cache' => DRUPAL_CACHE_PER_ROLE,
+		);
+
+		$blocks['my_search'] = array(
+				'info' => t('自定义搜索'),
+				'cache' => DRUPAL_CACHE_PER_ROLE,
+		);
+
+		//获取内容的BLOCKS
+		//列表型
+		$blocks['services_category'] = array(
+				'info' => t('服务分类'),
+				'cache' => DRUPAL_CACHE_PER_ROLE,
+		);
+
+		$blocks['services_project'] = array(
+				'info' => t('服务项目'),
+				'cache' => DRUPAL_CACHE_PER_ROLE,
+		);
+
+		//文章型
+		$blocks['company_info'] = array(
+				'info' => t('公司简介'),
+				'cache' => DRUPAL_CACHE_PER_ROLE,
+		);
+
+		$blocks['contact_us'] = array(
+				'info' => t('联系我们'),
+				'cache' => DRUPAL_CACHE_PER_ROLE,
+		);
+
+		return $blocks;
+}
+
+/**********************************************************\
+
+Implements hook_block_view()
+
+
+
+@file
+
+
+@API
+
+
+@api
+
+
+@param string $delta 在hook_block_info()中定义
+
+@return array $blocks
+
+\*********************************************************/
+
+function custom_blocks_block_view($delta = '') {
+		switch($delta) {
+		//配置型blocks
+		case 'big_top':
+				$block['subject'] = t('头部广告');
+				$block['content'] = t('xxxxxxxx');
+				break;
+		case 'telephone':
+				//$block['subject'] = t('联系电话');
+				$img_telephone=variable_get('telephone',array());
+				$block['content'] = '<img src='.base_path().'sites/default/files/home_images/'.$img_telephone['image'].' />';
+				break;
+		case 'scroll_bar':
+				//$block['subject'] = t('滚动文字');
+				//$block['content'] = 'fjaoiewfjoiawejfoiwaej';
+				$block['content'] =	'<marquee>'.variable_get('scroll_set','测试').'...</marquee>';
+				break;
+		case 'friend_links':
+				$block['subject'] = t('友情链接');
+				$block['content'] = t('xxxxxxxx');
+				break;
+		case 'custom_footer':
+				$block['subject'] = t('尾部');
+				$block['content'] = 'joifajeoifjawoei';
+				$block['content'] = variable_get('custom_footer','尾部信息');
+				break;
+		case 'my_search':
+				$block['subject'] = t('自定义搜索');
+				$block['content'] = t('xxxxxxxx');
+				break;
+		//获取内容的BLOCKS
+		//列表型
+		case 'services_category':
+				$vid = 1;
+				$services_category = custom_blocks_gererate_list(custom_blocks_build_taxonomy_tree($vid));
+				$va = taxonomy_vocabulary_load($vid);
+				$block['subject'] = $va->name;
+				$block['content'] = $services_category;
+				break;
+		case 'services_project':
+				$block['subject'] = t('服务项目');
+				$article = array();
+				$items=article_output_list(article_list_get(1));
+				foreach($items as $term ) {
+						$article[] = implode("      ",$term);
+				}
+				
+				$block['content']['taxonomy'] = array(
+						'#theme' => 'item_list__services_project__block',
+						'#items' => $article,
+				);
+				
+//				$block['content'] = $article[0];
+				break;
+		//文章型
+		case 'company_info':
+				$block['subject'] = t('公司简介');
+				$company_info = page_contents(1);
+				$block['content'] = '<p>'.$company_info[0]->body_value.'</p>';
+				break;
+		case 'contact_us':
+				$block['subject'] = t('联系我们');
+				$contact_us = page_contents(4);
+				$block['content'] = '<p>'.substr($contact_us[0]->body_value,0,1000).'</p>';
+				break;
+		}
+		return $block;
+}
+
+/*************************************************************\
+ *						测试							 *
+\*************************************************************/
+//function test(){
+//		$term = taxonomy_get_term(1);
+//		$vocabulary = taxonomy_vocabulary_load($term->vid);
+//
+//		return $vocabulary;
+//}
+
+
+
+
+
+/*************************************************************\
+ *						分类列表							 *
+\*************************************************************/
+
+function custom_blocks_build_taxonomy_tree($vid, $parent = 1, $max_depth = 2) {
+		static $result;
+
+		$args = func_get_args();
+		$hash = md5(implode('-',$args));
+
+		if(!isset($results[$hash])){
+				$terms = array();
+
+				$data = taxonomy_get_tree($vid, $parent, $max_depth);
+		}
+
+		return $data;
+}
+
+function custom_blocks_gererate_list($list) {
+		$items = array();
+//加链接
+		foreach ($list as $term) {
+				$title = $term->name;
+
+				$item = l($title, 'taxonomy/term/'. $term->tid);
+
+				$items[]=$item;
+		}
+
+		return theme('item_list', array('items'=>$items));
+}
+
+
+/*************************************************************\
+ *						文章获取							 *
+\*************************************************************/
+function page_contents($contentid) {
+		$query = db_select('field_revision_body', 'n')
+				->fields('n', array('revision_id','body_value'))
+				->condition('entity_id',$contentid)
+				->execute();
+		foreach($query as $record) {
+				$result[] = $record;
+		}
+
+		return $result;
+}
+
+
+/*************************************************************\
+ *						列表获取							 *
+\*************************************************************/
+function article_list_get($tid){
+		$query = db_select('taxonomy_term_hierarchy','th');
+		$query->join('taxonomy_term_data','td','th.tid = td.tid');
+		$query->join('taxonomy_index','ti','th.tid = ti.tid');
+		$query->join('node','n','ti.nid = n.nid');
+		$result=$query->fields('n',array('nid','title'))
+			->fields('td',array('tid','name'))
+				->condition('th.parent',$tid)
+				->orderBy('n.nid')
+				->execute()
+				->fetchAll();
+
+		return $result;
+}
+
+function sub_article_list_get($tid) {
+		$query = db_select('taxonomy_term_data','td');
+		$query->join('taxonomy_index','ti','td.tid = ti.tid');
+		$query->join('node','n','ti.nid = n.nid');
+		$result = $query->fields('n',array('nid','title'))
+				->fields('td',array('tid','name'))
+				->condition('td.tid',$tid)
+				->orderBy('n.nid')
+				->execute()
+				->fetchAll();
+
+		return $result;
+}
+
+function category_parent_or_sub($tid){
+		$query = db_select('taxonomy_term_hierarchy','th')
+				->fields('th',array('parent'))
+				->condition('tid',$tid)
+				->execute()
+				->fetchAll();
+
+		return $query;
+}
+
+function article_output_list($list) {
+		$items = array();
+
+		foreach($list as $node){
+				$items[] = array(
+						'data1' => l($node->name,'taxonomy/term/'. $node->tid),
+						'data' => l($node->title, 'node/'.$node->nid),
+				);
+		}
+
+
+
+		return $items;
+
+}
+
+
+/**************************************************************\
+						页面重写
+\**************************************************************/
+
+function custom_blocks_menu_alter(&$items) {
+  if (!empty($items['taxonomy/term/%taxonomy_term'])) {
+    $items['taxonomy/term/%taxonomy_term']['page callback'] = 'custom_blocks_term_page';
+  }
+}
+
+function custom_blocks_term_page($term) {
+
+  $current = (object) array(
+    'tid' => $term->tid,
+  );
+  $breadcrumb = array();
+
+  while ($parents = taxonomy_get_parents($current->tid)) {
+    $current = array_shift($parents);
+    $breadcrumb[] = l($current->name, 'taxonomy/term/' . $current->tid);
+  }
+  $breadcrumb[] = l(t('首页'), NULL);
+  $breadcrumb = array_reverse($breadcrumb);
+  drupal_set_breadcrumb($breadcrumb);
+  drupal_add_feed('taxonomy/term/' . $term->tid . '/feed', 'RSS - ' . $term->name);
+
+  $subOrParent = category_parent_or_sub($current->tid);
+	if($subOrParent[0]->parent == '0'){
+			$items=article_output_list(article_list_get($current->tid));
+	}else{
+				$items=article_output_list(sub_article_list_get($current->tid));
+	}
+  if(!empty($items)){
+				foreach($items as $terms ) {
+						$article[] = implode("      ",$terms);
+				}
+				
+				$build['content']['taxonomy'] = array(
+						'#theme' => 'item_list__services_project__block',
+						'#items' => $article,
+				);
+  }else{
+   $build['no_content'] = array(
+     '#prefix' => '<p>', 
+     '#markup' => t('此分类还没有任何文章'), 
+     '#suffix' => '</p>',
+   );
+
+  }
+
+
+
+		return $build;
+  // Build breadcrumb based on the hierarchy of the term.
+ // $current = (object) array(
+ //   'tid' => $term->tid,
+ // );
+ // var_dump($current);
+ // $breadcrumb = array();
+
+ // while ($parents = taxonomy_get_parents($current->tid)) {
+ //   $current = array_shift($parents);
+ //   $breadcrumb[] = l($current->name, 'taxonomy/term/' . $current->tid);
+ // }
+ // $breadcrumb[] = l(t('首页'), NULL);
+ // $breadcrumb = array_reverse($breadcrumb);
+ // drupal_set_breadcrumb($breadcrumb);
+ // drupal_add_feed('taxonomy/term/' . $term->tid . '/feed', 'RSS - ' . $term->name);
+
+ // $build = array();
+
+ // 
+ //$build['term_heading'] = array(
+ //  'term' => taxonomy_term_view($term, 'teaser'),
+ //);
+
+ //if ($nids = taxonomy_select_nodes($term->tid, TRUE, variable_get('default_nodes_main', 10))) {
+////		 if($sub=taxonomy_get_parents($current->tid)){
+////				 var_dump($sub);
+////		 }
+ //  $nodes = node_load_multiple($nids);
+ //  $fuck = node_view_multiple($nodes);
+ //  $build += $fuck;
+ //  $build['pager'] = array(
+ //    '#theme' => 'pager', 
+ //    '#weight' => 5,
+ //  );
+ //}
+ //else {
+ //  $build['no_content'] = array(
+ //    '#prefix' => '<p>', 
+ //    '#markup' => t('此分类还没有任何文章'), 
+ //    '#suffix' => '</p>',
+ //  );
+ //}
+
+////$build = array();
+ // //$build['']
+
+ // return $build;
+}
+
+
+
+//function custom_blocks_menu_alter(&$items) {
+//  if (!empty($items['taxonomy/term/%taxonomy_term'])) {
+//    $items['taxonomy/term/%taxonomy_term']['page callback'] = '_custom_taxonomy_term_page';
+//  }
+//}
+//
+//function _custom_taxonomy_term_page ( $term ) {
+//
+//   $build = taxonomy_term_page( $term );
+//
+//   // Make customizations then return
+//   unset( $build['term_heading']['#prefix'] ); 
+//   unset( $build['term_heading']['#suffix'] );
+//
+//   var_dump($build);
+//
+//   return $build;
+//}
+
+
+/**************************************************************\
+						菜单设置
+\**************************************************************/
+
+function custom_blocks_menu() {
+		$items = array();
+
+		$items['admin/custom_blocks'] = array(
+				'title' => t('设置'),
+				'description' => t('设置自定义区块'),
+				'page callback' => 'drupal_get_form',
+				'page arguments' => array('content_blocks_form'),
+				'access callback' => TRUE,
+				'type' => MENU_NORMAL_ITEM,
+		);
+
+		$items['admin/custom_blocks/content_blocks'] = array(
+				'title' => t('文字区块设置'),
+				'description' => t('设置自定义区块'),
+				'access callback' => TRUE,
+				'type' => MENU_DEFAULT_LOCAL_TASK,
+				'weight' => -10,
+		);
+
+		$items['admin/custom_blocks/multi_blocks'] = array(
+				'title' => t('多媒体区块上传'),
+				'description' => t('设置自定义区块'),
+				'page callback' => 'drupal_get_form',
+				'page arguments' => array('multi_blocks_form'),
+				'access callback' => TRUE,
+				'type' => MENU_LOCAL_TASK,
+		);
+
+		$items['admin/custom_blocks/multi_blocks_choose'] = array(
+				'title' => t('多媒体区块设置'),
+				'description' => t('设置自定义区块'),
+				'page callback' => 'drupal_get_form',
+				'page arguments' => array('multi_blocks_choose_form'),
+				'access callback' => TRUE,
+				'type' => MENU_LOCAL_TASK,
+		);
+
+//		$items['taxonomy/term/%taxonomy_term'] = array(
+//				'page callback' = 'taxonomy_display_taxonomy_term_page',
+//				'access callback' = TRUE,
+//		);
+
+		return $items;
+}
+
+
+function content_blocks_form($form, &$form_state) {
+		$form['scroll_set'] = array(
+				'#type' => 'textfield',
+				'#title' => t('跑马灯'),
+				'#default_value' => variable_get('scroll_set','哪里不对'),
+				'#description' => t('i.e. 对公司的介绍'),
+		);
+
+
+
+		$form['custom_footer'] = array(
+				'#type'=>'textfield',
+				//'#type' => 'text_format',
+				//'#format' => 'full_html',
+				'#title' => t('自定义尾部'),
+				'#default_value' => variable_get('custom_footer','尾部信息'),
+		);
+
+		return system_settings_form($form);
+}
+
+//图片上传表单
+function multi_blocks_form($form, &$form_state){
+
+	   $form['#attributes']['enctype'] = 'multipart/form-data'; // If this is not here, upload will fail on submit
+	   $form['fid'] = array( '#title'        => t('上传图片'),
+	                         '#type'         => 'file',
+	                         '#description'  => t('选择图片'),
+	                       );
+ 
+	   $form['submit'] = array(
+	    '#type' => 'submit',
+	    '#value' => t('Save'),
+	);		
+	return $form;
+		
+
+}
+
+//function multi_blocks_form_submit_validate($form, &$form_state) {
+//		if(isset($_FILES['files']) && is_uploaded_file($_FILES['files']['tmp_name']['fid'])) {
+//				if ($_FILES['files']['type']['fid'] != 'image/jpeg')
+//		}
+//				
+//}
+
+function multi_blocks_form_submit($form, &$form_state) {
+		$filepath = 'public://home_images/';
+		$validators = array(
+				'file_validate_extensions' => array('png gif jpg jpeg'),
+				'file_validate_image_resolution' => array('250x250'),
+				'file_validate_size' => array( 200 * 200),
+		);
+
+		file_prepare_directory($filepath, FILE_CREATE_DIRECTORY);
+		$file = file_save_upload('fid',$validators, $filepath,FILE_EXISTS_REPLACE);
+	//	$file = file_save_upload('fid',array('file_validate_extensions' => array('png gif jpg jpeg')),$filepath,FILE_EXISTS_REPLACE);
+
+
+		if($file){
+		$file->status = FILE_STATUS_PERMANENT;
+		$file = file_save($file);
+				drupal_set_message(t('上传成功'));
+		}else{
+				drupal_set_message('上传错误',$type='error');
+		}
+
+}
+
+function multi_blocks_choose_form($form ,&$form_state) {
+		$values = variable_get('telephone',array());
+
+		$images= getImagePaths();
+
+		$arrayImages = '';
+
+		$imagesPath = 'sites/default/files/home_images';
+
+
+		foreach($images as $key => $value) {
+				$arrImages[$key] = "<img src =".base_path().''.$imagesPath."/".$value." />";
+		}
+
+
+		$form['telephone'] = array(
+				'#title' => 'TestImage',
+				'#type' => 'radios',
+				'#default_value' => $values['image'],
+				'#options' => $arrImages,
+		);
+		$form['submit'] = array(
+				'#type' => 'submit',
+				'#value' => t('保存选择'),
+		);
+
+		return $form;
+}
+
+function multi_blocks_choose_form_submit($form ,&$form_state) {
+		$choosedImage['image'] = $form_state['values']['telephone'];
+
+		$arrImages = $choosedImage;
+		variable_set('telephone',$arrImages);
+		drupal_set_message('图片选择好了');
+}
+
+
+//设定图片存储地址
+function getImagePaths(){
+		$images = '';
+
+		$strImagesPath = 'public://home_images/';
+		$arrNoMask = array('.','..','CVS','svn');
+		$arrFiles = file_scan_directory($strImagesPath, '/\\.(jpg|gif|png|jpeg?)$/',$arrNoMask);
+
+		foreach ($arrFiles as $key => $value) {
+				$images[$value->filename] = iconv("gb2312","UTF-8", $value->filename);
+		}
+
+		return $images;
+}
+
+
+
+
+
